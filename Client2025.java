@@ -1,3 +1,5 @@
+package client.client;
+
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -5,9 +7,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.StringTokenizer;
@@ -15,15 +14,14 @@ import java.util.Vector;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.JTextPane; // JTextPane 추가
 import javax.swing.border.EmptyBorder;
 
 import java.io.File;
@@ -63,7 +61,6 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     private Vector<String> clientVC = new Vector<>(); // 전체 접속자 ID 목록
     private Vector<String> roomClientVC = new Vector<>(); // 채팅방 이름 목록
     private String myRoomID = ""; // 현재 클라이언트가 참여한 채팅방 ID
-    private static final String DOWNLOAD_DIR = "client_downloads/"; // 다운로드 폴더
 
     // network 변수
     private Socket socket; // 서버 연결 소켓
@@ -77,16 +74,16 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     public Client2025() {
         initializeLoginGUI();
         initializeMainGUI();
-        addActionListeners();
+        addActionListeners(); // 11-13
     }
 
     void initializeLoginGUI() {
-        loginGUI.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        loginGUI.setBounds(100, 100, 385, 541);
+        loginGUI.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 1
+        loginGUI.setBounds(100, 100, 385, 541); // 1
         loginJpanel = new JPanel();
         loginJpanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
-        loginGUI.setContentPane(loginJpanel);
+        loginGUI.setContentPane(loginJpanel); // 1
         loginJpanel.setLayout(null);
 
         JLabel lblNewLabel = new JLabel("Server IP");
@@ -121,7 +118,7 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         clientID_tf.setBounds(135, 377, 221, 33);
         loginJpanel.add(clientID_tf);
 
-        loginBtn = new JButton("Login");
+        loginBtn = new JButton("Login"); // 11-13
         loginBtn.setFont(new Font("굴림", Font.BOLD, 20));
         loginBtn.setBounds(12, 450, 344, 44);
         loginJpanel.add(loginBtn);
@@ -140,7 +137,7 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     void initializeMainGUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(600, 100, 510, 490); // Y축 크기 증가
+        setBounds(600, 100, 510, 460);
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(contentPane);
@@ -159,45 +156,37 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         noteBtn.setBounds(12, 192, 108, 23);
         contentPane.add(noteBtn);
 
-        sendImageBtn.setBounds(12, 222, 108, 23);
-        contentPane.add(sendImageBtn);
-
-
         JLabel 채팅방 = new JLabel("채팅방목록");
-        채팅방.setBounds(12, 255, 97, 15);
+        채팅방.setBounds(12, 225, 97, 15);
         contentPane.add(채팅방);
 
-        roomJlist.setBounds(12, 270, 108, 107);
+        roomJlist.setBounds(12, 240, 108, 107);
         contentPane.add(roomJlist);
 
-        joinRoomBtn.setBounds(6, 387, 60, 23);
+        joinRoomBtn.setBounds(6, 357, 60, 23);
         contentPane.add(joinRoomBtn);
         joinRoomBtn.setEnabled(false); // 초기 비활성화
 
-        exitRoomBtn.setBounds(68, 387, 60, 23);
+        exitRoomBtn.setBounds(68, 357, 60, 23);
         contentPane.add(exitRoomBtn);
         exitRoomBtn.setEnabled(false); // 초기 비활성화
 
-        createRoomBtn.setBounds(12, 416, 108, 23);
+        createRoomBtn.setBounds(12, 386, 108, 23);
         contentPane.add(createRoomBtn);
 
         JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBounds(142, 16, 340, 393);
+        scrollPane.setBounds(142, 16, 340, 363);
         contentPane.add(scrollPane);
-
-        chatPane.setEditable(false); // 편집 불가
-        chatPane.setContentType("text/html"); // **HTML 콘텐츠 타입 설정**
-        // 초기 HTML 설정 (body 태그 안에 내용이 추가됨)
-        chatPane.setText("<html><body style='font-size:12px; margin-top: 5px; margin-left: 5px;'></body></html>");
-        scrollPane.setViewportView(chatPane); // **JTextPane 추가**
+        scrollPane.setViewportView(chatArea); // JTextArea를 스크롤 패인에 추가
+        chatArea.setEditable(false); // 채팅 영역 편집 불가 설정
 
         msg_tf = new JTextField();
-        msg_tf.setBounds(144, 417, 268, 21);
+        msg_tf.setBounds(144, 387, 268, 21);
         contentPane.add(msg_tf);
         msg_tf.setColumns(10);
         msg_tf.setEditable(false); // 초기 편집 불가
 
-        sendBtn.setBounds(412, 416, 70, 23);
+        sendBtn.setBounds(412, 386, 70, 23);
         contentPane.add(sendBtn);
         sendBtn.setEnabled(false); // 초기 비활성화
 
@@ -208,7 +197,6 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     void addActionListeners() {
         loginBtn.addActionListener(this); // 로그인 버튼 리스너
         noteBtn.addActionListener(this); // 쪽지 버튼 리스너
-        sendImageBtn.addActionListener(this); // **이미지 전송 버튼 리스너**
         joinRoomBtn.addActionListener(this); // 채팅방 참여 버튼 리스너
         createRoomBtn.addActionListener(this); // 방 만들기 버튼 리스너
         sendBtn.addActionListener(this); // 전송 버튼 리스너
@@ -219,17 +207,17 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 서버 연결 시도
     public void connectToServer() {
-        if (!socketEstablished) {
+        if (!socketEstablished) { // 이미 연결되지 않았을 경우에만 시도
             try {
                 serverIP = serverIP_tf.getText().trim();
                 serverPort = Integer.parseInt(serverPort_tf.getText().trim());
-                socket = new Socket(serverIP, serverPort);
+                socket = new Socket(serverIP, serverPort); // 서버에 소켓 연결 시도
 
-                dis = new DataInputStream(socket.getInputStream());
-                dos = new DataOutputStream(socket.getOutputStream());
-                socketEstablished = true;
+                dis = new DataInputStream(socket.getInputStream()); // 입력 스트림 생성
+                dos = new DataOutputStream(socket.getOutputStream()); // 출력 스트림 생성
+                socketEstablished = true; // 연결 성공 플래그 설정
 
-                sendMyClientID();
+                sendMyClientID(); // 클라이언트 ID 서버로 전송
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "잘못된 포트 번호입니다.", "오류", JOptionPane.ERROR_MESSAGE);
             } catch (IOException e) {
@@ -242,20 +230,22 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     // 클라이언트 ID 서버로 전송 및 중복 ID 처리
     void sendMyClientID() {
         clientID = clientID_tf.getText().trim();
-        sendMsg(clientID);
+        sendMsg(clientID); // ID를 서버로 전송
 
         try {
-            String msg = dis.readUTF();
+            String msg = dis.readUTF(); // 서버로부터 응답 메시지 수신
             if ("DuplicateClientID".equals(msg)) {
+                // ID 중복 실패 처리
                 JOptionPane.showMessageDialog(this, "이미 사용중인 ID입니다.", "중복 ID", JOptionPane.ERROR_MESSAGE);
                 clientID_tf.setText("");
                 clientID_tf.requestFocus();
                 socketEstablished = false;
                 socket.close();
-                System.exit(0);
+                System.exit(0); // 애플리케이션 종료
 
             } else if ("GoodClientID".equals(msg)) {
-                InitializeAndRecvMsg();
+                // ID 등록 성공 처리 (서버 코드에 GoodClientID 전송 부분이 없지만 로직상 필요)
+                InitializeAndRecvMsg(); // 메인 GUI 초기화 및 메시지 수신 스레드 시작
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "서버로부터 응답을 받는 중 오류가 발생했습니다.", "통신 오류", JOptionPane.ERROR_MESSAGE);
@@ -264,11 +254,11 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 메인 GUI 표시 및 메시지 수신 스레드 시작
     void InitializeAndRecvMsg() {
-        this.setVisible(true);
-        this.loginGUI.setVisible(false);
+        this.setVisible(true); // 메인 창 표시
+        this.loginGUI.setVisible(false); // 로그인 창 숨김
 
-        clientVC.add(clientID);
-        setTitle("사용자: " + clientID);
+        clientVC.add(clientID); // 접속자 목록에 본인 ID 추가
+        setTitle("사용자: " + clientID); // 창 제목 설정
 
         // 서버로부터 메시지를 계속 수신하는 별도 스레드 시작
         new Thread(new Runnable() {
@@ -288,10 +278,10 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         }).start();
     }
 
-    // 서버로 메시지 전송 (문자열 프로토콜 전송용)
+    // 서버로 메시지 전송
     void sendMsg(String msg) {
         try {
-            dos.writeUTF(msg);
+            dos.writeUTF(msg); // 문자열 메시지 전송
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "메시지 전송 중 오류가 발생했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
         }
@@ -299,163 +289,84 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 수신한 메시지 파싱 및 프로토콜 처리
     void parseMsg(String msg) {
-        st = new StringTokenizer(msg, "/");
+        st = new StringTokenizer(msg, "/"); // '/' 구분자로 메시지 분리
         String protocol = st.nextToken();
-        String message = "";
-        if (st.hasMoreTokens()) {
-            message = st.nextToken();
-        }
+        String message = st.nextToken(); // 첫 번째 인자 (대부분 ID나 방 이름)
 
         // 프로토콜 종류에 따라 분기 처리
         switch (protocol) {
             case "NewClient":
             case "OldClient":
-                addClientToList(message);
+                addClientToList(message); // 새 클라이언트 또는 기존 클라이언트 목록 추가
                 break;
 
-            case "Note":
-                String note = st.nextToken();
-                showMessageBox(note, message + "님으로부터 쪽지");
+            case "Note": // 쪽지 처리
+                String note = st.nextToken(); // 쪽지 내용
+                showMessageBox(note, message + "님으로부터 쪽지"); // 쪽지 알림 창 표시
                 break;
 
             case "CreateRoom":
-                handleCreateRoom(message);
+                handleCreateRoom(message); // 방 생성 성공 처리
                 break;
 
             case "NewRoom":
-            case "OldRoom":
-                handleAddRoomJlist(message);
+            case "OldRoom": // 방 목록 업데이트
+                handleAddRoomJlist(message); // 새 방 또는 기존 방 목록 추가
                 break;
 
-            case "CreateRoomFail":
-                showErrorMessage("방 만들기 실패", "알림");
+            case "CreateRoomFail": // 방 생성 실패 처리
+                showErrorMessage("방 만들기 실패", "알림"); // 오류 메시지 표시
                 break;
 
-            case "JoinRoomMsg":
-                String msg2 = st.nextToken();
-                appendToChatArea("<span style='color: blue;'>[알림]</span> " + message + ": " + msg2);
+            case "JoinRoomMsg": // 방 참여/탈퇴 알림 메시지 처리
+                String msg2 = st.nextToken(); // 알림 메시지 내용
+                appendToChatArea(message + ": " + msg2); // 채팅창에 메시지 추가
                 break;
 
             case "JoinRoom":
-                handleJoinRoom(message);
+                handleJoinRoom(message); // 방 참여 성공 처리
                 break;
 
-            case "SendMsg":
-                String chatMsg = st.nextToken();
-                appendToChatArea("<span style='font-weight: bold;'>" + message + "</span>: " + chatMsg);
+            case "SendMsg": // 채팅 메시지 수신 처리
+                String chatMsg = st.nextToken(); // 채팅 메시지 내용
+                appendToChatArea(message + "님이 전송: " + chatMsg); // 채팅창에 메시지 추가
+
+                // [추가] 메시지를 보낸 사람(message)이 '나(clientID)'가 아닐 때만 수신음 재생
+                if (!message.equals(clientID)) {
+                    playSound("recv.wav");
+                }
                 break;
 
-            case "ImageReceived": // **이미지 수신 처리**
-                String senderID_img = message; // 보낸 사람 ID
-                String fileName_img = st.nextToken();
-                String fileSavePath_img = st.nextToken(); // 서버에 저장된 절대 경로
-                handleImageReceived(senderID_img, fileName_img, fileSavePath_img);
+            case "ClientJlistUpdate": // 클라이언트 목록 갱신 요청 처리
+                refreshClientJList(); // 클라이언트 목록 디스플레이 갱신
                 break;
 
-            case "FileReady": // **서버가 파일 전송 준비 완료 알림**
-                long fileSize = Long.parseLong(st.nextToken());
-                String targetPath = st.nextToken();
-                String senderID = st.nextToken(); // **보낸 사람 ID 수신 추가**
-                receiveFileFromServer(message, fileSize, targetPath, senderID); // **senderID 인자 추가**
-                break;
-
-            case "ClientJlistUpdate":
-                refreshClientJList();
-                break;
-
-            case "RoomJlistUpdate":
+            case "RoomJlistUpdate": // 방 목록 갱신 요청 처리
                 System.out.println("채팅방 목록 갱신");
-                refreshRoomJlist();
+                refreshRoomJlist(); // 방 목록 디스플레이 갱신
                 break;
 
             case "ClientExit":
-                removeClientFromJlist(message);
+                removeClientFromJlist(message); // 클라이언트 퇴장 처리 (목록에서 제거)
                 break;
 
             case "ServerShutdown":
-                handleServerShutdown();
+                handleServerShutdown(); // 서버 종료 알림 처리
                 break;
 
             case "RoomOut":
-                handleRoomOut(message);
+                handleRoomOut(message); // 방 삭제 처리 (방 목록에서 제거)
                 break;
 
-            case "ExitRoomMsg":
+            case "ExitRoomMsg": // 다른 클라이언트의 방 탈퇴 메시지 처리
                 String exitMsg = st.nextToken();
-                appendToChatArea("<span style='color: blue;'>[알림]</span> " + message + ": " + exitMsg);
-                break;
-
-            case "FileError":
-                showErrorMessage(message, "파일 수신 오류");
+                appendToChatArea(message + ": " + exitMsg); // 채팅창에 메시지 추가
                 break;
 
             default:
-                break;
+                break; // 처리되지 않은 프로토콜 무시
         }
     }
-
-    // **이미지 수신 처리**
-    private void handleImageReceived(String senderID, String fileName, String fileSavePath) {
-        // 사용자에게 다운로드 여부를 묻지 않고, 즉시 다운로드 요청 및 미리보기 시도
-
-        // 서버에 파일 요청: FileRequest/서버에저장된경로/다운로드될파일명/보낸사람ID
-        sendMsg("FileRequest/" + fileSavePath + "/" + fileName + "/" + senderID);
-    }
-
-    // **파일 수신 로직 (서버로부터)**
-    private void receiveFileFromServer(String fileName, long fileSize, String targetPath, String senderID) {
-        File dir = new File(DOWNLOAD_DIR);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-
-        // 다운로드 파일명은 senderID와 실제 파일명을 조합하여 충돌 방지
-        String savePath = DOWNLOAD_DIR + senderID + "_" + fileName;
-
-        try (FileOutputStream fos = new FileOutputStream(savePath)) {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            long remaining = fileSize;
-
-            while (remaining > 0 && (bytesRead = dis.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
-                fos.write(buffer, 0, bytesRead);
-                remaining -= bytesRead;
-            }
-            fos.flush();
-
-            // 미리보기 시도 (이미지 파일인 경우)
-            if (fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
-                previewImageInChat(savePath, senderID);
-            } else {
-                // 이미지 파일이 아닐 경우 텍스트로 알림
-                appendToChatArea("<span style='color: green;'>[파일 수신]</span> " + senderID + "님이 파일(" + fileName + ")을 전송했습니다. (저장 위치: " + savePath + ")");
-            }
-
-        } catch (IOException e) {
-            showErrorMessage("파일 수신 중 오류 발생: " + e.getMessage(), "수신 오류");
-        }
-    }
-
-    // **채팅창 내부에 이미지 미리보기 표시**
-    private void previewImageInChat(String filePath, String senderID) {
-        // 1. HTML 이미지 태그 생성
-        // Windows 경로 구분자(\)를 웹 경로 구분자(/)로 변환해야 JTextPane의 HTML 이미지가 로드됨
-        String cleanPath = new File(filePath).getAbsolutePath().replace("\\", "/");
-
-        String imageHtml = "<p style='margin: 0; padding: 0; color: #555;'>" +
-                "<span style='color: orange; font-weight: bold;'>[이미지]</span> " + senderID + "님이 이미지를 전송했습니다:</p>" +
-                "<img src='file:///" + cleanPath + "' width='200' style='max-width: 100%; height: auto; border: 1px solid #ccc;'/><br>";
-
-        // 2. 현재 HTML 내용에 이미지 태그 삽입
-        String currentHtml = chatPane.getText();
-        // </body> 태그 직전에 새 HTML 내용 삽입
-        String newHtml = currentHtml.replace("</body>", imageHtml + "</body>");
-        chatPane.setText(newHtml);
-
-        // 3. 스크롤을 맨 아래로 이동
-        chatPane.setCaretPosition(chatPane.getDocument().getLength());
-    }
-
 
     private void showMessageBox(String msg, String title) {
         JOptionPane.showMessageDialog(null, msg, title, JOptionPane.CLOSED_OPTION);// 메시지 박스 표시.
@@ -473,14 +384,14 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 방 생성 성공 시 처리
     private void handleCreateRoom(String roomName) {
-        myRoomID = roomName;
-        joinRoomBtn.setEnabled(false);
-        createRoomBtn.setEnabled(false);
-        exitRoomBtn.setEnabled(true);
-        msg_tf.setEditable(true);
-        sendBtn.setEnabled(true);
-        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID);
-        appendToChatArea("<span style='color: blue;'>[시스템]</span> " + clientID + "님이 " + myRoomID + " 방을 생성하고 가입했습니다.");
+        myRoomID = roomName; // 현재 방 이름 설정
+        joinRoomBtn.setEnabled(false); // 참여 버튼 비활성화
+        createRoomBtn.setEnabled(false); // 방 생성 버튼 비활성화
+        exitRoomBtn.setEnabled(true); // 퇴장 버튼 활성화
+        msg_tf.setEditable(true); // 메시지 입력 가능
+        sendBtn.setEnabled(true); // 전송 버튼 활성화
+        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID); // 타이틀 업데이트
+        appendToChatArea(clientID + "님이 " + myRoomID + " 방을 생성하고 가입했습니다.\n"); // 채팅창에 알림 추가
     }
 
     // 방 목록(Vector)에 방 이름 추가 및 참여 버튼 활성화
@@ -540,16 +451,9 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
     }
 
-    // **채팅창에 메시지 추가 (HTML)**
+    // 채팅창에 메시지 추가.
     private void appendToChatArea(String message) {
-        // HTML body 태그 내에 텍스트를 추가하고 줄바꿈 (<br>) 처리
-        String currentHtml = chatPane.getText();
-        // </body> 직전에 새 메시지를 삽입. <p> 태그를 사용하여 줄 간격 확보
-        String newHtml = currentHtml.replace("</body>", "<p style='margin: 0; padding: 0;'>" + message + "</p></body>");
-        chatPane.setText(newHtml);
-
-        // 스크롤을 항상 맨 아래로 이동
-        chatPane.setCaretPosition(chatPane.getDocument().getLength());
+        chatArea.append(message + "\n");
     }
 
     // 정보 메시지 박스 표시
@@ -561,70 +465,28 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == loginBtn) {
-            connectToServer();
+            System.out.println("로그인 버튼 클릭됨");
+            connectToServer(); // 서버 연결 시도
         } else if (e.getSource() == noteBtn) {
-            handleNoteSendButtonClick();
-        } else if (e.getSource() == sendImageBtn) {
-            handleSendImageButtonClick();
+            System.out.println("쪽지 버튼 클릭됨");
+            handleNoteSendButtonClick(); // 쪽지 보내기 처리
         } else if (e.getSource() == createRoomBtn) {
-            handleCreateRoomButtonClick();
+            handleCreateRoomButtonClick(); // 방 만들기 버튼 처리
         } else if (e.getSource() == joinRoomBtn) {
-            handleJoinRoomButtonClick();
+            handleJoinRoomButtonClick(); // 채팅방 참여 버튼 처리
         } else if (e.getSource() == sendBtn) {
-            handleSendButtonClick();
+            handleSendButtonClick(); // 메시지 전송 버튼 처리
         } else if (e.getSource() == clientExitBtn) {
-            handleClientExitButtonClick();
+            handleClientExitButtonClick(); // 채팅 종료 버튼 처리
         } else if (e.getSource() == exitRoomBtn) {
-            handleExitRoomButtonClick();
+            System.out.println("채팅방 탈퇴 버튼 클릭됨");
+            handleExitRoomButtonClick(); // 채팅방 탈퇴 버튼 처리
         }
     }
-
-    // **이미지 파일 전송 버튼 클릭 처리**
-    public void handleSendImageButtonClick() {
-        if (myRoomID.isEmpty()) {
-            showErrorMessage("채팅방에 참여해야 이미지를 전송할 수 있습니다.", "오류");
-            return;
-        }
-
-        JFileChooser fileChooser = new JFileChooser();
-        int result = fileChooser.showOpenDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        File file = fileChooser.getSelectedFile();
-        String fileName = file.getName();
-        long fileSize = file.length();
-
-        if (!fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
-            showErrorMessage("JPG, JPEG, PNG, GIF 파일만 전송 가능합니다.", "파일 형식 오류");
-            return;
-        }
-
-        try (FileInputStream fis = new FileInputStream(file)) {
-            // 1. 프로토콜 및 메타데이터 전송: ImageTransfer/방ID/파일명/파일크기
-            dos.writeUTF("ImageTransfer/" + myRoomID + "/" + fileName + "/" + fileSize);
-
-            // 2. 파일 데이터를 DataOutputStream으로 직접 전송
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                dos.write(buffer, 0, bytesRead);
-            }
-            dos.flush();
-
-            // 전송 성공 시 채팅창에 알림
-            appendToChatArea("<span style='color: gray;'>[나]</span> 이미지 파일 전송 완료: " + fileName);
-
-        } catch (IOException e) {
-            showErrorMessage("이미지 전송 중 오류 발생: " + e.getMessage(), "전송 오류");
-        }
-    }
-
 
     // 쪽지 보내기 버튼 클릭 처리
     public void handleNoteSendButtonClick() {
-        String dstClient = (String) clientJlist.getSelectedValue();
+        String dstClient = (String) clientJlist.getSelectedValue(); // JList에서 선택된 클라이언트 ID
         if (dstClient == null) {
             showErrorMessage("쪽지를 보낼 대상을 선택", "오류");
             return;
@@ -636,24 +498,29 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
         String note = JOptionPane.showInputDialog("보낼 메시지:");
         if (note != null && !note.trim().isEmpty()) {
-            sendMsg("Note/" + dstClient + "/" + note);
+            sendMsg("Note/" + dstClient + "/" + note); // 서버로 쪽지 프로토콜 전송
+            System.out.println("수신자: " + dstClient + " | 전송 노트: " + note);
         }
     }
 
     // 방 만들기 버튼 클릭 처리
     private void handleCreateRoomButtonClick() {
+        System.out.println("방 만들기 버튼 클릭됨");
+
         String roomName = JOptionPane.showInputDialog("채팅방 이름 입력:");
         if (roomName == null || roomName.trim().isEmpty()) {
+            System.out.println("방 생성 취소 또는 이름 미입력");
             return;
         }
-        sendMsg("CreateRoom/" + roomName.trim());
+        sendMsg("CreateRoom/" + roomName.trim()); // 서버로 방 생성 요청 프로토콜 전송
     }
 
     // 채팅방 참여 버튼 클릭 처리
     private void handleJoinRoomButtonClick() {
-        String roomName = (String) roomJlist.getSelectedValue();
+        System.out.println("채팅방 참여 버튼 클릭됨");
+        String roomName = (String) roomJlist.getSelectedValue(); // JList에서 선택된 방 이름
         if (roomName != null) {
-            sendMsg("JoinRoom/" + roomName);
+            sendMsg("JoinRoom/" + roomName); // 서버로 방 참여 요청 프로토콜 전송
         } else {
             showErrorMessage("참여할 채팅방을 선택해주세요.", "오류");
         }
@@ -661,13 +528,15 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 메시지 전송 버튼 클릭 처리
     private void handleSendButtonClick() {
-        if (!myRoomID.isEmpty()) {
+        if (!myRoomID.isEmpty()) { // 현재 방에 참여 중인지 확인
             String message = msg_tf.getText().trim();
             if (!message.isEmpty()) {
-                sendMsg("SendMsg/" + myRoomID + "/" + message);
+                sendMsg("SendMsg/" + myRoomID + "/" + message); // 서버로 메시지 전송 프로토콜 전송
 
-                msg_tf.setText("");
-                msg_tf.requestFocus();
+                playSound("send.wav");
+
+                msg_tf.setText(""); // 입력 필드 초기화
+                msg_tf.requestFocus(); // 입력 필드에 포커스 재설정
             }
         } else {
             showErrorMessage("채팅방에 참여해야 메시지를 전송할 수 있다.", "오류");
@@ -676,50 +545,53 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 채팅 종료 버튼 클릭 처리 (전체 종료)
     private void handleClientExitButtonClick() {
-        if (!myRoomID.isEmpty()) {
-            sendMsg("ExitRoom/" + myRoomID);
+        if (!myRoomID.isEmpty()) { // 현재 참여 중인 방이 있다면
+            sendMsg("ExitRoom/" + myRoomID); // 서버에 방 탈퇴 알림
         }
 
-        sendMsg("ClientExit/Bye");
+        sendMsg("ClientExit/Bye"); // 서버에 클라이언트 종료 알림
 
-        clientVC.removeAllElements();
-        roomClientVC.removeAllElements();
-        myRoomID = "";
+        clientVC.removeAllElements(); // 클라이언트 목록 초기화
+        roomClientVC.removeAllElements(); // 방 목록 초기화
+        myRoomID = ""; // 현재 방 정보 초기화
 
-        closeSocket();
-        System.exit(0);
+        closeSocket(); // 소켓 연결 정리
+        System.exit(0); // 애플리케이션 종료
     }
 
     // 소켓 및 스트림 안전하게 닫기
     private void closeSocket() {
         try {
             if (dos != null) {
-                dos.close();
+                dos.close(); // 출력 스트림 닫기
             }
             if (dis != null) {
-                dis.close();
+                dis.close(); // 입력 스트림 닫기
             }
             if (socket != null) {
-                socket.close();
+                socket.close(); // 소켓 연결 닫기
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // 닫는 중 발생한 예외 로그 출력
         }
     }
 
     // 채팅방 탈퇴 버튼 클릭 처리
     private void handleExitRoomButtonClick() {
-        sendMsg("ExitRoom/" + myRoomID);
+        System.out.println("채팅방 탈퇴 버튼 클릭됨");
 
-        myRoomID = "";
+        sendMsg("ExitRoom/" + myRoomID); // 서버로 방 탈퇴 요청 프로토콜 전송
 
-        exitRoomBtn.setEnabled(false);
-        joinRoomBtn.setEnabled(roomClientVC.size() > 0);
-        createRoomBtn.setEnabled(true);
-        msg_tf.setEditable(false);
-        sendBtn.setEnabled(false);
+        myRoomID = ""; // 현재 방 정보 초기화
 
-        setTitle("사용자: " + clientID);
+        // GUI 상태 변경
+        exitRoomBtn.setEnabled(false); // 퇴장 버튼 비활성화
+        joinRoomBtn.setEnabled(roomClientVC.size() > 0); // 방 목록이 있으면 참여 버튼 활성화
+        createRoomBtn.setEnabled(true); // 방 생성 버튼 활성화
+        msg_tf.setEditable(false); // 메시지 입력 불가
+        sendBtn.setEnabled(false); // 전송 버튼 비활성화
+
+        setTitle("사용자: " + clientID); // 타이틀을 사용자 ID만으로 변경
     }
 
     public void keyPressed(KeyEvent e) {
@@ -729,19 +601,37 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     public void keyReleased(KeyEvent e) {
         // Enter 키가 눌렸을 때 메시지 전송 처리
         if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            if (!myRoomID.isEmpty()) {
+            if (!myRoomID.isEmpty()) { // 방에 참여 중일 때만
                 String message = msg_tf.getText().trim();
                 if (!message.isEmpty()) {
-                    sendMsg("SendMsg/" + myRoomID + "/" + message);
+                    sendMsg("SendMsg/" + myRoomID + "/" + message); // 메시지 전송
 
-                    msg_tf.setText("");
-                    msg_tf.requestFocus();
+                    playSound("send.wav");
+
+                    msg_tf.setText(""); // 입력 필드 초기화
+                    msg_tf.requestFocus(); // 입력 필드에 포커스 재설정
                 }
             }
         }
     }
 
     public void keyTyped(KeyEvent e) {
+    }
+
+    public void playSound(String fileName) {
+        try {
+            File file = new File("sounds/" + fileName);
+            if (file.exists()) {
+                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(file);
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioInputStream);
+                clip.start();
+            } else {
+                System.out.println("소리 파일을 찾을 수 없습니다: " + fileName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {

@@ -26,6 +26,11 @@ import javax.swing.JTextField;
 import javax.swing.JTextPane; // JTextPane 추가
 import javax.swing.border.EmptyBorder;
 
+import java.io.File;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 public class Client2025 extends JFrame implements ActionListener, KeyListener {
     private static final long serialVersionUID = 2L;
 
@@ -43,12 +48,11 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // Main GUI 변수
     private JPanel contentPane;
-    private JList<String> clientJlist = new JList(); // 전체 접속자 명단
-    private JList<String> roomJlist = new JList();
+    private JList<String> clientJlist = new JList(); // 전체 접속자 명단, 첫번째는 자기 자신 //11-20
+    private JList<String> roomJlist = new JList(); // 11-21
     private JTextField msg_tf;
-    private JTextPane chatPane = new JTextPane(); // **JTextArea -> JTextPane으로 변경**
-    private JButton noteBtn = new JButton("쪽지 보내기");
-    private JButton sendImageBtn = new JButton("이미지 전송");
+    private JTextArea chatArea = new JTextArea(); // 채팅창 변수
+    private JButton noteBtn = new JButton("쪽지 보내기"); // 11-27
     private JButton joinRoomBtn = new JButton("채팅방 참여");
     private JButton createRoomBtn = new JButton("방 만들기");
     private JButton sendBtn = new JButton("전송");
@@ -273,12 +277,12 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
                 try {
                     String msg;
                     while (true) {
-                        msg = dis.readUTF();
+                        msg = dis.readUTF(); // 메시지 수신 대기
                         System.out.println("서버로부터 받은 메시지: " + msg);
-                        parseMsg(msg);
+                        parseMsg(msg); // 수신한 메시지 파싱 및 처리
                     }
                 } catch (IOException e) {
-                    handleServerShutdown();
+                    handleServerShutdown(); // 통신 오류 발생 시
                 }
             }
         }).start();
@@ -481,11 +485,11 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 방 목록(Vector)에 방 이름 추가 및 참여 버튼 활성화
     private void handleAddRoomJlist(String roomName) {
-        if (myRoomID.equals("")) {
-            joinRoomBtn.setEnabled(true);
+        if (myRoomID.equals("")) { // 현재 방에 참여하고 있지 않을 때
+            joinRoomBtn.setEnabled(true); // 참여 버튼 활성화
         }
-        roomClientVC.add(roomName);
-        roomJlist.setListData(roomClientVC);
+        roomClientVC.add(roomName); // 방 이름 추가
+        roomJlist.setListData(roomClientVC); // 방 목록 화면 갱신
     }
 
     // 방 JList 화면 갱신
@@ -495,15 +499,15 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
     // 방 참여 성공 시 처리
     private void handleJoinRoom(String roomName) {
-        myRoomID = roomName;
-        joinRoomBtn.setEnabled(false);
-        createRoomBtn.setEnabled(false);
-        exitRoomBtn.setEnabled(true);
-        msg_tf.setEditable(true);
-        sendBtn.setEnabled(true);
-        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID);
-        appendToChatArea("<span style='color: blue;'>[시스템]</span> " + clientID + "님이 " + myRoomID + " 방에 참여했습니다.");
-        showInfoMessage("채팅방 참여 성공", "알림");
+        myRoomID = roomName; // 현재 방 이름 설정
+        joinRoomBtn.setEnabled(false); // 참여 버튼 비활성화
+        createRoomBtn.setEnabled(false); // 방 생성 버튼 비활성화
+        exitRoomBtn.setEnabled(true); // 퇴장 버튼 활성화
+        msg_tf.setEditable(true); // 메시지 입력 가능
+        sendBtn.setEnabled(true); // 전송 버튼 활성화
+        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID); // 타이틀 업데이트
+        appendToChatArea(clientID + "님이 " + myRoomID + " 방에 참여했습니다.\n"); // 채팅창에 알림 추가
+        showInfoMessage("채팅방 참여 성공", "알림"); // 성공 메시지 표시
     }
 
     // 클라이언트 목록(Vector)에서 ID 제거
@@ -514,21 +518,21 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
     // 서버 종료 시 처리
     private void handleServerShutdown() {
         try {
-            closeSocket();
-            clientVC.removeAllElements();
-            roomClientVC.removeAllElements();
+            closeSocket(); // 소켓 닫기 (안전하게 정리)
+            clientVC.removeAllElements(); // 클라이언트 목록 초기화
+            roomClientVC.removeAllElements(); // 방 목록 초기화
         } catch (Exception e) {
             e.printStackTrace();
         }
         JOptionPane.showMessageDialog(this, "서버가 종료되었습니다.", "서버 종료", JOptionPane.WARNING_MESSAGE);
-        System.exit(0);
+        System.exit(0); // 애플리케이션 종료
     }
 
     // 서버에서 방이 삭제되었을 때 처리
     private void handleRoomOut(String roomName) {
-        roomClientVC.remove(roomName);
+        roomClientVC.remove(roomName); // 방 목록에서 지정된 방 제거
         if (roomClientVC.isEmpty()) {
-            joinRoomBtn.setEnabled(false);
+            joinRoomBtn.setEnabled(false);// 방이 없을 때 참여 버튼 비활성화.
         }
     }
 

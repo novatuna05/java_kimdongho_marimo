@@ -1,5 +1,3 @@
-package client.client;
-
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -7,83 +5,90 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.TransferHandler;
 import javax.swing.border.EmptyBorder;
-
-import java.io.File;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
+import java.awt.datatransfer.DataFlavor;
 
 public class Client2025 extends JFrame implements ActionListener, KeyListener {
     private static final long serialVersionUID = 2L;
 
-    // Login GUI 변수
-    private JFrame loginGUI = new JFrame("로그인"); // 로그인 창 프레임
-    private JPanel loginJpanel; // 로그인 패널
-    private JTextField serverIP_tf; // 서버 IP 입력 필드
-    private JTextField serverPort_tf; // 서버 포트 입력 필드
-    private JTextField clientID_tf; // 클라이언트 ID 입력 필드
-    private JLabel img_Label; // 이미지 표시 레이블
-    private JButton loginBtn; // 로그인 버튼
-    private String serverIP; // 서버 IP 주소
-    private int serverPort; // 서버 포트 번호
-    private String clientID; // 클라이언트 ID (사용자 이름)
+    // Login GUI
+    private JFrame loginGUI = new JFrame("로그인");
+    private JPanel loginJpanel;
+    private JTextField serverIP_tf;
+    private JTextField serverPort_tf;
+    private JTextField clientID_tf;
+    private JLabel img_Label;
+    private JButton loginBtn;
+    private String serverIP;
+    private int serverPort;
+    private String clientID;
 
-    // Main GUI 변수
+    // Main GUI
     private JPanel contentPane;
-    private JList<String> clientJlist = new JList(); // 전체 접속자 명단, 첫번째는 자기 자신 //11-20
-    private JList<String> roomJlist = new JList(); // 11-21
+    private JList<String> clientJlist = new JList<>();
+    private JList<String> roomJlist = new JList<>();
     private JTextField msg_tf;
-    private JTextArea chatArea = new JTextArea(); // 채팅창 변수
-    private JButton noteBtn = new JButton("쪽지 보내기"); // 11-27
+    private JTextPane chatPane = new JTextPane();
+    private JButton noteBtn = new JButton("쪽지 보내기");
     private JButton joinRoomBtn = new JButton("채팅방 참여");
     private JButton createRoomBtn = new JButton("방 만들기");
     private JButton sendBtn = new JButton("전송");
     private JButton exitRoomBtn = new JButton("탈퇴");
     private JButton clientExitBtn = new JButton("채팅종료");
+    private JButton sendImageBtn = new JButton("이미지 전송");
+    private JPanel fileDropPanel;
 
-    // 클라이언트 관리
-    private Vector<String> clientVC = new Vector<>(); // 전체 접속자 ID 목록
-    private Vector<String> roomClientVC = new Vector<>(); // 채팅방 이름 목록
-    private String myRoomID = ""; // 현재 클라이언트가 참여한 채팅방 ID
+    // 상태
+    private Vector<String> clientVC = new Vector<>();
+    private Vector<String> roomClientVC = new Vector<>();
+    private String myRoomID = "";
+    private static final String DOWNLOAD_DIR = "client_downloads/";
 
-    // network 변수
-    private Socket socket; // 서버 연결 소켓
-    private DataInputStream dis; // 서버로부터 데이터를 읽어오는 스트림
-    private DataOutputStream dos; // 서버로 데이터를 보내는 스트림
-
-    // 기타
-    StringTokenizer st; // 메시지 파싱을 위한 토크나이저
-    private boolean socketEstablished = false; // 소켓 연결 성공 여부 플래그
+    // Network
+    private Socket socket;
+    private DataInputStream dis;
+    private DataOutputStream dos;
+    private boolean socketEstablished = false;
+    private StringTokenizer st;
 
     public Client2025() {
         initializeLoginGUI();
         initializeMainGUI();
-        addActionListeners(); // 11-13
+        addActionListeners();
     }
 
+    // ===== 로그인 GUI =====
     void initializeLoginGUI() {
-        loginGUI.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 1
-        loginGUI.setBounds(100, 100, 385, 541); // 1
+        loginGUI.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loginGUI.setBounds(100, 100, 385, 541);
         loginJpanel = new JPanel();
         loginJpanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-
-        loginGUI.setContentPane(loginJpanel); // 1
+        loginGUI.setContentPane(loginJpanel);
         loginJpanel.setLayout(null);
 
         JLabel lblNewLabel = new JLabel("Server IP");
@@ -91,9 +96,8 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         lblNewLabel.setBounds(12, 244, 113, 31);
         loginJpanel.add(lblNewLabel);
 
-        serverIP_tf = new JTextField();
+        serverIP_tf = new JTextField("127.0.0.1");
         serverIP_tf.setBounds(135, 245, 221, 33);
-        serverIP_tf.setText("127.0.0.1"); // 기본 IP 주소 설정
         loginJpanel.add(serverIP_tf);
         serverIP_tf.setColumns(10);
 
@@ -102,10 +106,9 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         lblServerPort.setBounds(12, 314, 113, 31);
         loginJpanel.add(lblServerPort);
 
-        serverPort_tf = new JTextField();
+        serverPort_tf = new JTextField("12345");
         serverPort_tf.setColumns(10);
         serverPort_tf.setBounds(135, 312, 221, 33);
-        serverPort_tf.setText("12345"); // 기본 포트 번호 설정
         loginJpanel.add(serverPort_tf);
 
         JLabel lblId = new JLabel("ID");
@@ -118,7 +121,7 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         clientID_tf.setBounds(135, 377, 221, 33);
         loginJpanel.add(clientID_tf);
 
-        loginBtn = new JButton("Login"); // 11-13
+        loginBtn = new JButton("Login");
         loginBtn.setFont(new Font("굴림", Font.BOLD, 20));
         loginBtn.setBounds(12, 450, 344, 44);
         loginJpanel.add(loginBtn);
@@ -132,92 +135,106 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
             JOptionPane.showMessageDialog(this, "이미지 로딩 중 오류 발생.", "오류", JOptionPane.ERROR_MESSAGE);
         }
 
-        loginGUI.setVisible(true); // 로그인 창 표시
+        loginGUI.setVisible(true);
     }
 
+    // ===== 메인 GUI =====
     void initializeMainGUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(600, 100, 510, 460);
+        setBounds(600, 100, 600, 560);
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(contentPane);
         contentPane.setLayout(null);
 
         JLabel 접속자 = new JLabel("전체 접속자");
-        접속자.setBounds(12, 20, 73, 15);
+        접속자.setBounds(12, 10, 100, 15);
         contentPane.add(접속자);
 
-        clientJlist.setBounds(12, 45, 108, 107);
+        clientJlist.setBounds(12, 30, 120, 140);
         contentPane.add(clientJlist);
 
-        clientExitBtn.setBounds(12, 162, 108, 23);
+        clientExitBtn.setBounds(12, 175, 120, 23);
         contentPane.add(clientExitBtn);
 
-        noteBtn.setBounds(12, 192, 108, 23);
+        noteBtn.setBounds(12, 205, 120, 23);
         contentPane.add(noteBtn);
 
+        sendImageBtn.setBounds(12, 235, 120, 23);
+        contentPane.add(sendImageBtn);
+
         JLabel 채팅방 = new JLabel("채팅방목록");
-        채팅방.setBounds(12, 225, 97, 15);
+        채팅방.setBounds(12, 270, 100, 15);
         contentPane.add(채팅방);
 
-        roomJlist.setBounds(12, 240, 108, 107);
+        roomJlist.setBounds(12, 290, 120, 140);
         contentPane.add(roomJlist);
 
-        joinRoomBtn.setBounds(6, 357, 60, 23);
+        joinRoomBtn.setBounds(12, 440, 120, 23);
         contentPane.add(joinRoomBtn);
-        joinRoomBtn.setEnabled(false); // 초기 비활성화
+        joinRoomBtn.setEnabled(false);
 
-        exitRoomBtn.setBounds(68, 357, 60, 23);
+        exitRoomBtn.setBounds(12, 470, 120, 23);
         contentPane.add(exitRoomBtn);
-        exitRoomBtn.setEnabled(false); // 초기 비활성화
+        exitRoomBtn.setEnabled(false);
 
-        createRoomBtn.setBounds(12, 386, 108, 23);
+        createRoomBtn.setBounds(12, 500, 120, 23);
         contentPane.add(createRoomBtn);
 
         JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBounds(142, 16, 340, 363);
+        scrollPane.setBounds(150, 10, 420, 380);
         contentPane.add(scrollPane);
-        scrollPane.setViewportView(chatArea); // JTextArea를 스크롤 패인에 추가
-        chatArea.setEditable(false); // 채팅 영역 편집 불가 설정
+
+        chatPane.setEditable(false);
+        chatPane.setContentType("text/html");
+        chatPane.setText("<html><body style='font-size:12px; margin-top:5px; margin-left:5px;'></body></html>");
+        scrollPane.setViewportView(chatPane);
 
         msg_tf = new JTextField();
-        msg_tf.setBounds(144, 387, 268, 21);
+        msg_tf.setBounds(150, 400, 300, 25);
         contentPane.add(msg_tf);
         msg_tf.setColumns(10);
-        msg_tf.setEditable(false); // 초기 편집 불가
+        msg_tf.setEditable(false);
 
-        sendBtn.setBounds(412, 386, 70, 23);
+        sendBtn.setBounds(460, 400, 110, 25);
         contentPane.add(sendBtn);
-        sendBtn.setEnabled(false); // 초기 비활성화
+        sendBtn.setEnabled(false);
 
-        this.setVisible(false); // 메인 창은 로그인 성공 후 표시
+        // 파일 드롭 영역
+        fileDropPanel = new JPanel();
+        fileDropPanel.setBorder(BorderFactory.createTitledBorder("여기로 파일을 드래그해서 전송"));
+        fileDropPanel.setBounds(150, 435, 420, 90);
+        fileDropPanel.setTransferHandler(new FileDropHandler());
+        contentPane.add(fileDropPanel);
+
+        this.setVisible(false);
     }
 
-    // 이벤트 리스너 등록
     void addActionListeners() {
-        loginBtn.addActionListener(this); // 로그인 버튼 리스너
-        noteBtn.addActionListener(this); // 쪽지 버튼 리스너
-        joinRoomBtn.addActionListener(this); // 채팅방 참여 버튼 리스너
-        createRoomBtn.addActionListener(this); // 방 만들기 버튼 리스너
-        sendBtn.addActionListener(this); // 전송 버튼 리스너
-        exitRoomBtn.addActionListener(this); // 채팅방 탈퇴 버튼 리스너
-        msg_tf.addKeyListener(this); // 메시지 입력 필드 키보드 리스너 (Enter 처리용)
-        clientExitBtn.addActionListener(this); // 채팅 종료 버튼 리스너
+        loginBtn.addActionListener(this);
+        noteBtn.addActionListener(this);
+        sendImageBtn.addActionListener(this);
+        joinRoomBtn.addActionListener(this);
+        createRoomBtn.addActionListener(this);
+        sendBtn.addActionListener(this);
+        exitRoomBtn.addActionListener(this);
+        clientExitBtn.addActionListener(this);
+        msg_tf.addKeyListener(this);
     }
 
-    // 서버 연결 시도
+    // ===== 서버 접속 =====
     public void connectToServer() {
-        if (!socketEstablished) { // 이미 연결되지 않았을 경우에만 시도
+        if (!socketEstablished) {
             try {
                 serverIP = serverIP_tf.getText().trim();
                 serverPort = Integer.parseInt(serverPort_tf.getText().trim());
-                socket = new Socket(serverIP, serverPort); // 서버에 소켓 연결 시도
+                socket = new Socket(serverIP, serverPort);
 
-                dis = new DataInputStream(socket.getInputStream()); // 입력 스트림 생성
-                dos = new DataOutputStream(socket.getOutputStream()); // 출력 스트림 생성
-                socketEstablished = true; // 연결 성공 플래그 설정
+                dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                socketEstablished = true;
 
-                sendMyClientID(); // 클라이언트 ID 서버로 전송
+                sendMyClientID();
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "잘못된 포트 번호입니다.", "오류", JOptionPane.ERROR_MESSAGE);
             } catch (IOException e) {
@@ -227,223 +244,311 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         }
     }
 
-    // 클라이언트 ID 서버로 전송 및 중복 ID 처리
+    // 클라이언트 ID 서버로 전송 및 중복 처리
     void sendMyClientID() {
         clientID = clientID_tf.getText().trim();
-        sendMsg(clientID); // ID를 서버로 전송
+        if (clientID.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "ID를 입력하세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        sendMsg(clientID);
 
         try {
-            String msg = dis.readUTF(); // 서버로부터 응답 메시지 수신
+            String msg = dis.readUTF();
             if ("DuplicateClientID".equals(msg)) {
-                // ID 중복 실패 처리
                 JOptionPane.showMessageDialog(this, "이미 사용중인 ID입니다.", "중복 ID", JOptionPane.ERROR_MESSAGE);
                 clientID_tf.setText("");
                 clientID_tf.requestFocus();
                 socketEstablished = false;
                 socket.close();
-                System.exit(0); // 애플리케이션 종료
-
             } else if ("GoodClientID".equals(msg)) {
-                // ID 등록 성공 처리 (서버 코드에 GoodClientID 전송 부분이 없지만 로직상 필요)
-                InitializeAndRecvMsg(); // 메인 GUI 초기화 및 메시지 수신 스레드 시작
+                InitializeAndRecvMsg();
+            } else {
+                // 예기치 않은 응답이 온 경우에도 메시지 수신 스레드 시작
+                InitializeAndRecvMsg();
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "서버로부터 응답을 받는 중 오류가 발생했습니다.", "통신 오류", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // 메인 GUI 표시 및 메시지 수신 스레드 시작
+    // 메인 GUI 표시 및 수신 스레드 시작
     void InitializeAndRecvMsg() {
-        this.setVisible(true); // 메인 창 표시
-        this.loginGUI.setVisible(false); // 로그인 창 숨김
+        this.setVisible(true);
+        this.loginGUI.setVisible(false);
 
-        clientVC.add(clientID); // 접속자 목록에 본인 ID 추가
-        setTitle("사용자: " + clientID); // 창 제목 설정
+        clientVC.add(clientID);
+        setTitle("사용자: " + clientID);
 
-        // 서버로부터 메시지를 계속 수신하는 별도 스레드 시작
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String msg;
-                    while (true) {
-                        msg = dis.readUTF(); // 메시지 수신 대기
-                        System.out.println("서버로부터 받은 메시지: " + msg);
-                        parseMsg(msg); // 수신한 메시지 파싱 및 처리
-                    }
-                } catch (IOException e) {
-                    handleServerShutdown(); // 통신 오류 발생 시
+        new Thread(() -> {
+            try {
+                String msg;
+                while (true) {
+                    msg = dis.readUTF();
+                    parseMsg(msg);
                 }
+            } catch (IOException e) {
+                handleServerShutdown();
             }
         }).start();
     }
 
-    // 서버로 메시지 전송
+    // ===== 서버로 문자열 메시지 전송 =====
     void sendMsg(String msg) {
         try {
-            dos.writeUTF(msg); // 문자열 메시지 전송
+            dos.writeUTF(msg);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "메시지 전송 중 오류가 발생했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // 수신한 메시지 파싱 및 프로토콜 처리
+    // ===== 수신 메시지 파싱 =====
     void parseMsg(String msg) {
-        st = new StringTokenizer(msg, "/"); // '/' 구분자로 메시지 분리
+        st = new StringTokenizer(msg, "/");
         String protocol = st.nextToken();
-        String message = st.nextToken(); // 첫 번째 인자 (대부분 ID나 방 이름)
+        String message = st.hasMoreTokens() ? st.nextToken() : "";
 
-        // 프로토콜 종류에 따라 분기 처리
         switch (protocol) {
             case "NewClient":
             case "OldClient":
-                addClientToList(message); // 새 클라이언트 또는 기존 클라이언트 목록 추가
+                addClientToList(message);
                 break;
 
-            case "Note": // 쪽지 처리
-                String note = st.nextToken(); // 쪽지 내용
-                showMessageBox(note, message + "님으로부터 쪽지"); // 쪽지 알림 창 표시
+            case "Note": {
+                String note = st.hasMoreTokens() ? st.nextToken() : "";
+                showMessageBox(note, message + "님으로부터 쪽지");
                 break;
+            }
 
             case "CreateRoom":
-                handleCreateRoom(message); // 방 생성 성공 처리
+                handleCreateRoom(message);
                 break;
 
             case "NewRoom":
-            case "OldRoom": // 방 목록 업데이트
-                handleAddRoomJlist(message); // 새 방 또는 기존 방 목록 추가
+            case "OldRoom":
+                handleAddRoomJlist(message);
                 break;
 
-            case "CreateRoomFail": // 방 생성 실패 처리
-                showErrorMessage("방 만들기 실패", "알림"); // 오류 메시지 표시
+            case "CreateRoomFail":
+                showErrorMessage(message, "방 만들기 실패");
                 break;
 
-            case "JoinRoomMsg": // 방 참여/탈퇴 알림 메시지 처리
-                String msg2 = st.nextToken(); // 알림 메시지 내용
-                appendToChatArea(message + ": " + msg2); // 채팅창에 메시지 추가
+            case "JoinRoomMsg": {
+                String msg2 = st.hasMoreTokens() ? st.nextToken() : "";
+                appendToChatArea("<span style='color: blue;'>[알림]</span> " + message + ": " + msg2);
                 break;
+            }
 
             case "JoinRoom":
-                handleJoinRoom(message); // 방 참여 성공 처리
+                handleJoinRoom(message);
                 break;
 
-            case "SendMsg": // 채팅 메시지 수신 처리
-                String chatMsg = st.nextToken(); // 채팅 메시지 내용
-                appendToChatArea(message + "님이 전송: " + chatMsg); // 채팅창에 메시지 추가
-
-                // [추가] 메시지를 보낸 사람(message)이 '나(clientID)'가 아닐 때만 수신음 재생
+            case "SendMsg": {
+                String chatMsg = st.hasMoreTokens() ? st.nextToken() : "";
+                appendToChatArea("<span style='font-weight: bold;'>" + message + "</span>: " + chatMsg);
                 if (!message.equals(clientID)) {
                     playSound("recv.wav");
                 }
                 break;
+            }
 
-            case "ClientJlistUpdate": // 클라이언트 목록 갱신 요청 처리
-                refreshClientJList(); // 클라이언트 목록 디스플레이 갱신
+            case "ImageReceived": {
+                String fileName_img = st.hasMoreTokens() ? st.nextToken() : "";
+                String fileSavePath_img = st.hasMoreTokens() ? st.nextToken() : "";
+                handleImageReceived(message, fileName_img, fileSavePath_img);
+                break;
+            }
+
+            case "FileReady": {
+                long fileSize = Long.parseLong(st.nextToken());
+                String targetPath = st.nextToken();
+                String senderID = st.nextToken();
+                receiveFileFromServer(message, fileSize, targetPath, senderID);
+                break;
+            }
+
+            case "File": { // File/보낸사람ID/파일명/파일크기 + 바이너리
+                handleFileBroadcastReceive(message, st);
+                break;
+            }
+
+            case "ClientJlistUpdate":
+                refreshClientJList();
                 break;
 
-            case "RoomJlistUpdate": // 방 목록 갱신 요청 처리
-                System.out.println("채팅방 목록 갱신");
-                refreshRoomJlist(); // 방 목록 디스플레이 갱신
+            case "RoomJlistUpdate":
+                refreshRoomJlist();
                 break;
 
             case "ClientExit":
-                removeClientFromJlist(message); // 클라이언트 퇴장 처리 (목록에서 제거)
+                removeClientFromJlist(message);
                 break;
 
-            case "ServerShutdown":
-                handleServerShutdown(); // 서버 종료 알림 처리
+            case "ExitRoom":
+                handleExitRoomFromServer(message);
                 break;
 
             case "RoomOut":
-                handleRoomOut(message); // 방 삭제 처리 (방 목록에서 제거)
+                handleRoomOut(message);
                 break;
 
-            case "ExitRoomMsg": // 다른 클라이언트의 방 탈퇴 메시지 처리
-                String exitMsg = st.nextToken();
-                appendToChatArea(message + ": " + exitMsg); // 채팅창에 메시지 추가
+            case "ExitRoomMsg": {
+                String exitMsg = st.hasMoreTokens() ? st.nextToken() : "";
+                appendToChatArea("<span style='color: blue;'>[알림]</span> " + message + ": " + exitMsg);
+                break;
+            }
+
+            case "FileError":
+                showErrorMessage(message, "파일 오류");
+                break;
+
+            case "ServerShutdown":
+                handleServerShutdown();
                 break;
 
             default:
-                break; // 처리되지 않은 프로토콜 무시
+                break;
         }
     }
 
     private void showMessageBox(String msg, String title) {
-        JOptionPane.showMessageDialog(null, msg, title, JOptionPane.CLOSED_OPTION);// 메시지 박스 표시.
+        JOptionPane.showMessageDialog(null, msg, title, JOptionPane.CLOSED_OPTION);
     }
 
-    // 클라이언트 목록(Vector)에 ID 추가
-    private void addClientToList(String clientID) {
-        clientVC.add(clientID);
+    // ===== 이미지 수신 처리 (ImageTransfer + FileRequest 프로토콜용) =====
+    private void handleImageReceived(String senderID, String fileName, String fileSavePath) {
+        // 즉시 서버에 파일 다운로드 요청
+        sendMsg("FileRequest/" + fileSavePath + "/" + fileName + "/" + senderID);
     }
 
-    // 클라이언트 JList 화면 갱신
+    // 서버가 FileReady 를 보낸 후, 실제 파일 데이터를 수신
+    private void receiveFileFromServer(String fileName, long fileSize, String targetPath, String senderID) {
+        File dir = new File(DOWNLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        String savePath = DOWNLOAD_DIR + senderID + "_" + fileName;
+
+        try (FileOutputStream fos = new FileOutputStream(savePath)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            long remaining = fileSize;
+
+            while (remaining > 0 && (bytesRead = dis.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
+                fos.write(buffer, 0, bytesRead);
+                remaining -= bytesRead;
+            }
+            fos.flush();
+
+            if (fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
+                previewImageInChat(savePath, senderID);
+            } else {
+                appendToChatArea("<span style='color: green;'>[파일 수신]</span> " + senderID + "님이 파일("
+                        + fileName + ")을 전송했습니다. (저장 위치: " + savePath + ")");
+            }
+
+        } catch (IOException e) {
+            showErrorMessage("파일 수신 중 오류 발생: " + e.getMessage(), "수신 오류");
+        }
+    }
+
+    // 채팅창에 이미지 미리보기
+    private void previewImageInChat(String filePath, String senderID) {
+        String cleanPath = new File(filePath).getAbsolutePath().replace("\\", "/");
+
+        String imageHtml =
+                "<p style='margin: 0; padding: 0; color: #555;'>"
+                        + "<span style='color: orange; font-weight: bold;'>[이미지]</span> "
+                        + senderID + "님이 이미지를 전송했습니다:</p>"
+                        + "<img src='file:///" + cleanPath
+                        + "' width='200' style='max-width: 100%; height: auto; border: 1px solid #ccc;'/><br>";
+
+        String currentHtml = chatPane.getText();
+        String newHtml = currentHtml.replace("</body>", imageHtml + "</body>");
+        chatPane.setText(newHtml);
+        chatPane.setCaretPosition(chatPane.getDocument().getLength());
+    }
+
+    // ===== 리스트 / 상태 관련 메소드 =====
+    private void addClientToList(String id) {
+        if (!clientVC.contains(id)) {
+            clientVC.add(id);
+        }
+    }
+
     private void refreshClientJList() {
         clientJlist.setListData(clientVC);
     }
 
-    // 방 생성 성공 시 처리
     private void handleCreateRoom(String roomName) {
-        myRoomID = roomName; // 현재 방 이름 설정
-        joinRoomBtn.setEnabled(false); // 참여 버튼 비활성화
-        createRoomBtn.setEnabled(false); // 방 생성 버튼 비활성화
-        exitRoomBtn.setEnabled(true); // 퇴장 버튼 활성화
-        msg_tf.setEditable(true); // 메시지 입력 가능
-        sendBtn.setEnabled(true); // 전송 버튼 활성화
-        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID); // 타이틀 업데이트
-        appendToChatArea(clientID + "님이 " + myRoomID + " 방을 생성하고 가입했습니다.\n"); // 채팅창에 알림 추가
+        myRoomID = roomName;
+        joinRoomBtn.setEnabled(false);
+        createRoomBtn.setEnabled(false);
+        exitRoomBtn.setEnabled(true);
+        msg_tf.setEditable(true);
+        sendBtn.setEnabled(true);
+        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID);
+        appendToChatArea("<span style='color: blue;'>[시스템]</span> " + clientID + "님이 " + myRoomID
+                + " 방을 생성하고 가입했습니다.");
     }
 
-    // 방 목록(Vector)에 방 이름 추가 및 참여 버튼 활성화
     private void handleAddRoomJlist(String roomName) {
-        if (myRoomID.equals("")) { // 현재 방에 참여하고 있지 않을 때
-            joinRoomBtn.setEnabled(true); // 참여 버튼 활성화
+        if (roomName == null || roomName.isEmpty()) return;
+        if (!roomClientVC.contains(roomName)) {
+            roomClientVC.add(roomName);
         }
-        roomClientVC.add(roomName); // 방 이름 추가
-        roomJlist.setListData(roomClientVC); // 방 목록 화면 갱신
+        roomJlist.setListData(roomClientVC);
+        if (myRoomID.equals("")) {
+            joinRoomBtn.setEnabled(true);
+        }
     }
 
-    // 방 JList 화면 갱신
     private void refreshRoomJlist() {
         roomJlist.setListData(roomClientVC);
-    }
-
-    // 방 참여 성공 시 처리
-    private void handleJoinRoom(String roomName) {
-        myRoomID = roomName; // 현재 방 이름 설정
-        joinRoomBtn.setEnabled(false); // 참여 버튼 비활성화
-        createRoomBtn.setEnabled(false); // 방 생성 버튼 비활성화
-        exitRoomBtn.setEnabled(true); // 퇴장 버튼 활성화
-        msg_tf.setEditable(true); // 메시지 입력 가능
-        sendBtn.setEnabled(true); // 전송 버튼 활성화
-        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID); // 타이틀 업데이트
-        appendToChatArea(clientID + "님이 " + myRoomID + " 방에 참여했습니다.\n"); // 채팅창에 알림 추가
-        showInfoMessage("채팅방 참여 성공", "알림"); // 성공 메시지 표시
-    }
-
-    // 클라이언트 목록(Vector)에서 ID 제거
-    private void removeClientFromJlist(String clientID) {
-        clientVC.remove(clientID);
-    }
-
-    // 서버 종료 시 처리
-    private void handleServerShutdown() {
-        try {
-            closeSocket(); // 소켓 닫기 (안전하게 정리)
-            clientVC.removeAllElements(); // 클라이언트 목록 초기화
-            roomClientVC.removeAllElements(); // 방 목록 초기화
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!roomClientVC.isEmpty() && myRoomID.equals("")) {
+            joinRoomBtn.setEnabled(true);
+        } else if (roomClientVC.isEmpty()) {
+            joinRoomBtn.setEnabled(false);
         }
-        JOptionPane.showMessageDialog(this, "서버가 종료되었습니다.", "서버 종료", JOptionPane.WARNING_MESSAGE);
-        System.exit(0); // 애플리케이션 종료
     }
 
-    // 서버에서 방이 삭제되었을 때 처리
+    private void handleJoinRoom(String roomName) {
+        myRoomID = roomName;
+        joinRoomBtn.setEnabled(false);
+        createRoomBtn.setEnabled(false);
+        exitRoomBtn.setEnabled(true);
+        msg_tf.setEditable(true);
+        sendBtn.setEnabled(true);
+        setTitle("사용자: " + clientID + " | 채팅방: " + myRoomID);
+        appendToChatArea("<span style='color: blue;'>[시스템]</span> " + clientID + "님이 " + myRoomID + " 방에 참여했습니다.");
+        showInfoMessage("채팅방 참여 성공", "알림");
+    }
+
+    private void removeClientFromJlist(String id) {
+        clientVC.remove(id);
+        clientJlist.setListData(clientVC);
+    }
+
+    private void handleExitRoomFromServer(String roomName) {
+        if (roomName.equals(myRoomID)) {
+            myRoomID = "";
+            exitRoomBtn.setEnabled(false);
+            msg_tf.setEditable(false);
+            sendBtn.setEnabled(false);
+            if (!roomClientVC.isEmpty()) {
+                joinRoomBtn.setEnabled(true);
+            }
+            setTitle("사용자: " + clientID);
+        }
+    }
+
     private void handleRoomOut(String roomName) {
-        roomClientVC.remove(roomName); // 방 목록에서 지정된 방 제거
+        roomClientVC.remove(roomName);
+        roomJlist.setListData(roomClientVC);
         if (roomClientVC.isEmpty()) {
-            joinRoomBtn.setEnabled(false);// 방이 없을 때 참여 버튼 비활성화.
+            joinRoomBtn.setEnabled(false);
         }
     }
 
@@ -451,42 +556,165 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
     }
 
-    // 채팅창에 메시지 추가.
     private void appendToChatArea(String message) {
-        chatArea.append(message + "\n");
+        String currentHtml = chatPane.getText();
+        String newHtml = currentHtml.replace("</body>",
+                "<p style='margin: 0; padding: 0;'>" + message + "</p></body>");
+        chatPane.setText(newHtml);
+        chatPane.setCaretPosition(chatPane.getDocument().getLength());
     }
 
-    // 정보 메시지 박스 표시
     private void showInfoMessage(String message, String title) {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // 액션 이벤트 처리 (버튼 클릭)
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == loginBtn) {
-            System.out.println("로그인 버튼 클릭됨");
-            connectToServer(); // 서버 연결 시도
-        } else if (e.getSource() == noteBtn) {
-            System.out.println("쪽지 버튼 클릭됨");
-            handleNoteSendButtonClick(); // 쪽지 보내기 처리
-        } else if (e.getSource() == createRoomBtn) {
-            handleCreateRoomButtonClick(); // 방 만들기 버튼 처리
-        } else if (e.getSource() == joinRoomBtn) {
-            handleJoinRoomButtonClick(); // 채팅방 참여 버튼 처리
-        } else if (e.getSource() == sendBtn) {
-            handleSendButtonClick(); // 메시지 전송 버튼 처리
-        } else if (e.getSource() == clientExitBtn) {
-            handleClientExitButtonClick(); // 채팅 종료 버튼 처리
-        } else if (e.getSource() == exitRoomBtn) {
-            System.out.println("채팅방 탈퇴 버튼 클릭됨");
-            handleExitRoomButtonClick(); // 채팅방 탈퇴 버튼 처리
+    // ===== 서버 종료 처리 =====
+    private void handleServerShutdown() {
+        try {
+            closeSocket();
+            clientVC.removeAllElements();
+            roomClientVC.removeAllElements();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        JOptionPane.showMessageDialog(this, "서버가 종료되었습니다.", "서버 종료", JOptionPane.WARNING_MESSAGE);
+        System.exit(0);
+    }
+
+    // ===== 파일 브로드캐스트(File 프로토콜) 수신 =====
+    private void handleFileBroadcastReceive(String senderID, StringTokenizer st) {
+        try {
+            if (!st.hasMoreTokens()) return;
+            String fileName = st.nextToken();
+            if (!st.hasMoreTokens()) return;
+            long fileSize = Long.parseLong(st.nextToken());
+
+            byte[] data = new byte[(int) fileSize];
+            dis.readFully(data);
+
+            JFileChooser chooser = new JFileChooser();
+            chooser.setSelectedFile(new File(fileName));
+            int result = chooser.showSaveDialog(this);
+
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File outFile = chooser.getSelectedFile();
+                try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                    fos.write(data);
+                }
+                appendToChatArea("<span style='color: green;'>" + senderID + "님으로부터 파일 수신: "
+                        + outFile.getName() + "</span>");
+            } else {
+                appendToChatArea("<span style='color: gray;'>" + senderID
+                        + "님이 보낸 파일을 저장하지 않았습니다.</span>");
+            }
+        } catch (Exception e) {
+            showErrorMessage("파일 수신 중 오류: " + e.getMessage(), "파일 수신 오류");
         }
     }
 
-    // 쪽지 보내기 버튼 클릭 처리
-    public void handleNoteSendButtonClick() {
-        String dstClient = (String) clientJlist.getSelectedValue(); // JList에서 선택된 클라이언트 ID
+    // ===== 파일 전송(File 프로토콜, 드래그&드롭) =====
+    private void sendFileToServer(File file) {
+        if (myRoomID == null || myRoomID.isEmpty()) {
+            showErrorMessage("채팅방에 참여해야 파일을 전송할 수 있습니다.", "오류");
+            return;
+        }
+        if (file == null || !file.exists()) {
+            showErrorMessage("존재하지 않는 파일입니다.", "오류");
+            return;
+        }
+
+        long fileSize = file.length();
+        if (fileSize > 10 * 1024 * 1024) {
+            showErrorMessage("파일이 너무 큽니다. (10MB 초과)", "오류");
+            return;
+        }
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] data = new byte[(int) fileSize];
+            int readBytes = fis.read(data);
+            if (readBytes != fileSize) {
+                showErrorMessage("파일을 읽는 중 오류가 발생했습니다.", "오류");
+                return;
+            }
+
+            synchronized (dos) {
+                String header = "File/" + clientID + "/" + file.getName() + "/" + fileSize;
+                dos.writeUTF(header);
+                dos.write(data);
+                dos.flush();
+            }
+
+            appendToChatArea("<span style='color: gray;'>[나] " + file.getName() + " 파일을 전송했습니다.</span>");
+        } catch (IOException e) {
+            showErrorMessage("파일 전송 중 오류: " + e.getMessage(), "파일 전송 오류");
+        }
+    }
+
+    private class FileDropHandler extends TransferHandler {
+        @Override
+        public boolean canImport(TransferSupport support) {
+            return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) return false;
+            try {
+                List<File> files = (List<File>) support.getTransferable()
+                        .getTransferData(DataFlavor.javaFileListFlavor);
+                for (File f : files) {
+                    sendFileToServer(f);
+                }
+                return true;
+            } catch (Exception e) {
+                showErrorMessage("파일 전송 중 오류: " + e.getMessage(), "파일 전송 오류");
+                return false;
+            }
+        }
+    }
+
+    // ===== 액션 이벤트 =====
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Object src = e.getSource();
+
+        if (src == loginBtn) {
+            connectToServer();
+        } else if (src == noteBtn) {
+            handleNoteSendButtonClick();
+        } else if (src == sendImageBtn) {
+            handleSendImageButtonClick();
+        } else if (src == createRoomBtn) {
+            handleCreateRoomButtonClick();
+        } else if (src == joinRoomBtn) {
+            handleJoinRoomButtonClick();
+        } else if (src == sendBtn) {
+            handleSendButtonClick();
+        } else if (src == clientExitBtn) {
+            handleClientExitButtonClick();
+        } else if (src == exitRoomBtn) {
+            handleExitRoomButtonClick();
+        }
+    }
+
+    // ===== 버튼 핸들러 =====
+    private void handleSendButtonClick() {
+        if (myRoomID == null || myRoomID.isEmpty()) {
+            showErrorMessage("채팅방에 참여해야 메시지를 전송할 수 있습니다.", "오류");
+            return;
+        }
+        String message = msg_tf.getText().trim();
+        if (!message.isEmpty()) {
+            sendMsg("SendMsg/" + myRoomID + "/" + message);
+            playSound("send.wav");
+            msg_tf.setText("");
+            msg_tf.requestFocus();
+        }
+    }
+
+    private void handleNoteSendButtonClick() {
+        String dstClient = clientJlist.getSelectedValue();
         if (dstClient == null) {
             showErrorMessage("쪽지를 보낼 대상을 선택", "오류");
             return;
@@ -498,126 +726,104 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
 
         String note = JOptionPane.showInputDialog("보낼 메시지:");
         if (note != null && !note.trim().isEmpty()) {
-            sendMsg("Note/" + dstClient + "/" + note); // 서버로 쪽지 프로토콜 전송
-            System.out.println("수신자: " + dstClient + " | 전송 노트: " + note);
+            sendMsg("Note/" + dstClient + "/" + note);
         }
     }
 
-    // 방 만들기 버튼 클릭 처리
     private void handleCreateRoomButtonClick() {
-        System.out.println("방 만들기 버튼 클릭됨");
-
         String roomName = JOptionPane.showInputDialog("채팅방 이름 입력:");
         if (roomName == null || roomName.trim().isEmpty()) {
-            System.out.println("방 생성 취소 또는 이름 미입력");
             return;
         }
-        sendMsg("CreateRoom/" + roomName.trim()); // 서버로 방 생성 요청 프로토콜 전송
+        sendMsg("CreateRoom/" + roomName.trim());
     }
 
-    // 채팅방 참여 버튼 클릭 처리
     private void handleJoinRoomButtonClick() {
-        System.out.println("채팅방 참여 버튼 클릭됨");
-        String roomName = (String) roomJlist.getSelectedValue(); // JList에서 선택된 방 이름
+        String roomName = roomJlist.getSelectedValue();
         if (roomName != null) {
-            sendMsg("JoinRoom/" + roomName); // 서버로 방 참여 요청 프로토콜 전송
+            sendMsg("JoinRoom/" + roomName);
         } else {
             showErrorMessage("참여할 채팅방을 선택해주세요.", "오류");
         }
     }
 
-    // 메시지 전송 버튼 클릭 처리
-    private void handleSendButtonClick() {
-        if (!myRoomID.isEmpty()) { // 현재 방에 참여 중인지 확인
-            String message = msg_tf.getText().trim();
-            if (!message.isEmpty()) {
-                sendMsg("SendMsg/" + myRoomID + "/" + message); // 서버로 메시지 전송 프로토콜 전송
-
-                playSound("send.wav");
-
-                msg_tf.setText(""); // 입력 필드 초기화
-                msg_tf.requestFocus(); // 입력 필드에 포커스 재설정
-            }
-        } else {
-            showErrorMessage("채팅방에 참여해야 메시지를 전송할 수 있다.", "오류");
+    private void handleExitRoomButtonClick() {
+        if (myRoomID != null && !myRoomID.isEmpty()) {
+            sendMsg("ExitRoom/" + myRoomID);
         }
     }
 
-    // 채팅 종료 버튼 클릭 처리 (전체 종료)
     private void handleClientExitButtonClick() {
-        if (!myRoomID.isEmpty()) { // 현재 참여 중인 방이 있다면
-            sendMsg("ExitRoom/" + myRoomID); // 서버에 방 탈퇴 알림
+        if (myRoomID != null && !myRoomID.isEmpty()) {
+            sendMsg("ExitRoom/" + myRoomID);
         }
-
-        sendMsg("ClientExit/Bye"); // 서버에 클라이언트 종료 알림
-
-        clientVC.removeAllElements(); // 클라이언트 목록 초기화
-        roomClientVC.removeAllElements(); // 방 목록 초기화
-        myRoomID = ""; // 현재 방 정보 초기화
-
-        closeSocket(); // 소켓 연결 정리
-        System.exit(0); // 애플리케이션 종료
+        sendMsg("ClientExit/Bye");
+        closeSocket();
+        System.exit(0);
     }
 
-    // 소켓 및 스트림 안전하게 닫기
+    // 이미지 전송 버튼 클릭
+    public void handleSendImageButtonClick() {
+        if (myRoomID.isEmpty()) {
+            showErrorMessage("채팅방에 참여해야 이미지를 전송할 수 있습니다.", "오류");
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        int result = fileChooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File file = fileChooser.getSelectedFile();
+        String fileName = file.getName();
+        long fileSize = file.length();
+
+        if (!fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
+            showErrorMessage("JPG, JPEG, PNG, GIF 파일만 전송 가능합니다.", "파일 형식 오류");
+            return;
+        }
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            dos.writeUTF("ImageTransfer/" + myRoomID + "/" + fileName + "/" + fileSize);
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                dos.write(buffer, 0, bytesRead);
+            }
+            dos.flush();
+
+            appendToChatArea("<span style='color: gray;'>[나]</span> 이미지 파일 전송 완료: " + fileName);
+
+        } catch (IOException e) {
+            showErrorMessage("이미지 전송 중 오류 발생: " + e.getMessage(), "전송 오류");
+        }
+    }
+
+    // ===== 소켓 정리 =====
     private void closeSocket() {
         try {
-            if (dos != null) {
-                dos.close(); // 출력 스트림 닫기
-            }
-            if (dis != null) {
-                dis.close(); // 입력 스트림 닫기
-            }
-            if (socket != null) {
-                socket.close(); // 소켓 연결 닫기
-            }
+            if (dos != null) dos.close();
+            if (dis != null) dis.close();
+            if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException e) {
-            e.printStackTrace(); // 닫는 중 발생한 예외 로그 출력
+            e.printStackTrace();
         }
     }
 
-    // 채팅방 탈퇴 버튼 클릭 처리
-    private void handleExitRoomButtonClick() {
-        System.out.println("채팅방 탈퇴 버튼 클릭됨");
-
-        sendMsg("ExitRoom/" + myRoomID); // 서버로 방 탈퇴 요청 프로토콜 전송
-
-        myRoomID = ""; // 현재 방 정보 초기화
-
-        // GUI 상태 변경
-        exitRoomBtn.setEnabled(false); // 퇴장 버튼 비활성화
-        joinRoomBtn.setEnabled(roomClientVC.size() > 0); // 방 목록이 있으면 참여 버튼 활성화
-        createRoomBtn.setEnabled(true); // 방 생성 버튼 활성화
-        msg_tf.setEditable(false); // 메시지 입력 불가
-        sendBtn.setEnabled(false); // 전송 버튼 비활성화
-
-        setTitle("사용자: " + clientID); // 타이틀을 사용자 ID만으로 변경
-    }
-
+    // ===== 키 이벤트 =====
+    @Override
     public void keyPressed(KeyEvent e) {
-    }
-
-    // KeyListener 인터페이스 메서드 구현 (키가 떼어졌을 때)
-    public void keyReleased(KeyEvent e) {
-        // Enter 키가 눌렸을 때 메시지 전송 처리
-        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            if (!myRoomID.isEmpty()) { // 방에 참여 중일 때만
-                String message = msg_tf.getText().trim();
-                if (!message.isEmpty()) {
-                    sendMsg("SendMsg/" + myRoomID + "/" + message); // 메시지 전송
-
-                    playSound("send.wav");
-
-                    msg_tf.setText(""); // 입력 필드 초기화
-                    msg_tf.requestFocus(); // 입력 필드에 포커스 재설정
-                }
-            }
+        if (e.getSource() == msg_tf && e.getKeyCode() == KeyEvent.VK_ENTER) {
+            handleSendButtonClick();
         }
     }
 
-    public void keyTyped(KeyEvent e) {
-    }
+    @Override public void keyReleased(KeyEvent e) {}
+    @Override public void keyTyped(KeyEvent e) {}
 
+    // ===== 사운드 재생 =====
     public void playSound(String fileName) {
         try {
             File file = new File("sounds/" + fileName);
@@ -626,11 +832,9 @@ public class Client2025 extends JFrame implements ActionListener, KeyListener {
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioInputStream);
                 clip.start();
-            } else {
-                System.out.println("소리 파일을 찾을 수 없습니다: " + fileName);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            // 사운드는 필수 기능이 아니므로 오류는 무시
         }
     }
 
